@@ -23,6 +23,8 @@ yarn add rhf-stepper
 
 ## Quick Start
 
+> **Important:** All `<Step>` and `<Controller>` components must always be mounted in the tree. They register fields on mount, so conditionally rendering them (`{currentStep === 0 && <Step>...}`) will break registration. Control visibility with `hidden` or CSS instead.
+
 ```tsx
 import { useForm } from 'react-hook-form'
 import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
@@ -39,21 +41,21 @@ function MyMultiStepForm() {
 
   return (
     <Form form={form} onSubmit={(data) => console.log(data)}>
-      {({ currentStep, isFirstStep, isLastStep }) => (
+      {({ currentStep }) => (
         <>
-          {currentStep === 0 && (
+          <div hidden={currentStep !== 0}>
             <Step>
               <Controller name="name" render={({ field }) => <input {...field} placeholder="Name" />} />
               <Controller name="email" render={({ field }) => <input {...field} placeholder="Email" />} />
             </Step>
-          )}
+          </div>
 
-          {currentStep === 1 && (
+          <div hidden={currentStep !== 1}>
             <Step>
               <Controller name="address" render={({ field }) => <input {...field} placeholder="Address" />} />
               <Controller name="city" render={({ field }) => <input {...field} placeholder="City" />} />
             </Step>
-          )}
+          </div>
 
           <StepNavigation />
         </>
@@ -129,25 +131,31 @@ When using a render function as children, you receive the full `FormContextValue
 
 Groups `<Controller>` fields into a logical step. Fields inside a `<Step>` are automatically registered and validated together.
 
+> **Important:** `<Step>` components must always be mounted (rendered) in the tree. Use `hidden` or CSS to control visibility -- do not conditionally render them.
+
 ```tsx
-<Step>
-  <Controller name="firstName" render={({ field }) => <input {...field} />} />
-  <Controller name="lastName" render={({ field }) => <input {...field} />} />
-</Step>
+<div hidden={currentStep !== 0}>
+  <Step>
+    <Controller name="firstName" render={({ field }) => <input {...field} />} />
+    <Controller name="lastName" render={({ field }) => <input {...field} />} />
+  </Step>
+</div>
 ```
 
 Steps can be nested for sub-step grouping:
 
 ```tsx
 <Step>
-  {/* Step 0 */}
-  <Step>
-    <Controller name="a" render={({ field }) => <input {...field} />} />
-  </Step>
-  {/* Step 1 */}
-  <Step>
-    <Controller name="b" render={({ field }) => <input {...field} />} />
-  </Step>
+  <div hidden={currentStep !== 0}>
+    <Step>
+      <Controller name="a" render={({ field }) => <input {...field} />} />
+    </Step>
+  </div>
+  <div hidden={currentStep !== 1}>
+    <Step>
+      <Controller name="b" render={({ field }) => <input {...field} />} />
+    </Step>
+  </div>
 </Step>
 ```
 
@@ -234,7 +242,7 @@ function SignupWizard() {
     <Form form={form} onSubmit={(data) => console.log(data)}>
       {({ currentStep }) => (
         <>
-          {currentStep === 0 && (
+          <div hidden={currentStep !== 0}>
             <Step>
               <Controller
                 name="email"
@@ -257,9 +265,9 @@ function SignupWizard() {
                 )}
               />
             </Step>
-          )}
+          </div>
 
-          {currentStep === 1 && (
+          <div hidden={currentStep !== 1}>
             <Step>
               <Controller
                 name="firstName"
@@ -272,7 +280,7 @@ function SignupWizard() {
                 render={({ field }) => <input {...field} placeholder="Last Name" />}
               />
             </Step>
-          )}
+          </div>
 
           <Navigation />
         </>
