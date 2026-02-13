@@ -23,8 +23,6 @@ yarn add rhf-stepper
 
 ## Quick Start
 
-> **Important:** All `<Step>` and `<Controller>` components must always be mounted in the tree. They register fields on mount, so conditionally rendering them (`{currentStep === 0 && <Step>...}`) will break registration. Control visibility with `hidden` or CSS instead.
-
 ```tsx
 import { useForm } from 'react-hook-form'
 import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
@@ -43,19 +41,23 @@ function MyMultiStepForm() {
     <Form form={form} onSubmit={(data) => console.log(data)}>
       {({ currentStep }) => (
         <>
-          <div hidden={currentStep !== 0}>
-            <Step>
-              <Controller name="name" render={({ field }) => <input {...field} placeholder="Name" />} />
-              <Controller name="email" render={({ field }) => <input {...field} placeholder="Email" />} />
-            </Step>
-          </div>
+          <Step>
+            {currentStep === 0 && (
+              <>
+                <Controller name="name" render={({ field }) => <input {...field} placeholder="Name" />} />
+                <Controller name="email" render={({ field }) => <input {...field} placeholder="Email" />} />
+              </>
+            )}
+          </Step>
 
-          <div hidden={currentStep !== 1}>
-            <Step>
-              <Controller name="address" render={({ field }) => <input {...field} placeholder="Address" />} />
-              <Controller name="city" render={({ field }) => <input {...field} placeholder="City" />} />
-            </Step>
-          </div>
+          <Step>
+            {currentStep === 1 && (
+              <>
+                <Controller name="address" render={({ field }) => <input {...field} placeholder="Address" />} />
+                <Controller name="city" render={({ field }) => <input {...field} placeholder="City" />} />
+              </>
+            )}
+          </Step>
 
           <StepNavigation />
         </>
@@ -76,6 +78,8 @@ function StepNavigation() {
   )
 }
 ```
+
+> **Important:** `<Step>` components must always be mounted in the tree. Conditionally render the `<Controller>` fields inside each `<Step>` based on `currentStep` to show/hide step content.
 
 ## API Reference
 
@@ -129,33 +133,35 @@ When using a render function as children, you receive the full `FormContextValue
 
 ### `<Step>`
 
-Groups `<Controller>` fields into a logical step. Fields inside a `<Step>` are automatically registered and validated together.
+Groups `<Controller>` fields into a logical step. Fields inside a `<Step>` are automatically registered and validated together. Each `<Step>` defines a step boundary -- conditionally render its children based on `currentStep` to control which step is visible.
 
-> **Important:** `<Step>` components must always be mounted (rendered) in the tree. Use `hidden` or CSS to control visibility -- do not conditionally render them.
+> **Important:** `<Step>` components must always be mounted in the tree. Do not conditionally render the `<Step>` itself -- only its children.
 
 ```tsx
-<div hidden={currentStep !== 0}>
-  <Step>
-    <Controller name="firstName" render={({ field }) => <input {...field} />} />
-    <Controller name="lastName" render={({ field }) => <input {...field} />} />
-  </Step>
-</div>
+<Step>
+  {currentStep === 0 && (
+    <>
+      <Controller name="firstName" render={({ field }) => <input {...field} />} />
+      <Controller name="lastName" render={({ field }) => <input {...field} />} />
+    </>
+  )}
+</Step>
 ```
 
 Steps can be nested for sub-step grouping:
 
 ```tsx
 <Step>
-  <div hidden={currentStep !== 0}>
-    <Step>
+  <Step>
+    {currentStep === 0 && (
       <Controller name="a" render={({ field }) => <input {...field} />} />
-    </Step>
-  </div>
-  <div hidden={currentStep !== 1}>
-    <Step>
+    )}
+  </Step>
+  <Step>
+    {currentStep === 1 && (
       <Controller name="b" render={({ field }) => <input {...field} />} />
-    </Step>
-  </div>
+    )}
+  </Step>
 </Step>
 ```
 
@@ -242,45 +248,49 @@ function SignupWizard() {
     <Form form={form} onSubmit={(data) => console.log(data)}>
       {({ currentStep }) => (
         <>
-          <div hidden={currentStep !== 0}>
-            <Step>
-              <Controller
-                name="email"
-                rules={{ required: 'Email is required' }}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <input {...field} type="email" placeholder="Email" />
-                    {fieldState.error && <p>{fieldState.error.message}</p>}
-                  </div>
-                )}
-              />
-              <Controller
-                name="password"
-                rules={{ required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' } }}
-                render={({ field, fieldState }) => (
-                  <div>
-                    <input {...field} type="password" placeholder="Password" />
-                    {fieldState.error && <p>{fieldState.error.message}</p>}
-                  </div>
-                )}
-              />
-            </Step>
-          </div>
+          <Step>
+            {currentStep === 0 && (
+              <>
+                <Controller
+                  name="email"
+                  rules={{ required: 'Email is required' }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="email" placeholder="Email" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="password"
+                  rules={{ required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' } }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="password" placeholder="Password" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+              </>
+            )}
+          </Step>
 
-          <div hidden={currentStep !== 1}>
-            <Step>
-              <Controller
-                name="firstName"
-                rules={{ required: 'First name is required' }}
-                render={({ field }) => <input {...field} placeholder="First Name" />}
-              />
-              <Controller
-                name="lastName"
-                rules={{ required: 'Last name is required' }}
-                render={({ field }) => <input {...field} placeholder="Last Name" />}
-              />
-            </Step>
-          </div>
+          <Step>
+            {currentStep === 1 && (
+              <>
+                <Controller
+                  name="firstName"
+                  rules={{ required: 'First name is required' }}
+                  render={({ field }) => <input {...field} placeholder="First Name" />}
+                />
+                <Controller
+                  name="lastName"
+                  rules={{ required: 'Last name is required' }}
+                  render={({ field }) => <input {...field} placeholder="Last Name" />}
+                />
+              </>
+            )}
+          </Step>
 
           <Navigation />
         </>

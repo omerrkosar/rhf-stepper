@@ -317,4 +317,4 @@ const Form = forwardRef(FormInner) as <TFieldValues extends FieldValues = FieldV
 ;(Form as React.NamedExoticComponent & { displayName?: string }).displayName = 'Form'
 
 export { Form, useFormContext, useInternalFormContext }
-export type { FormContextValue, InternalFormContextValue, FormProps }
+export type { FormContextValue, FormProps, InternalFormContextValue }

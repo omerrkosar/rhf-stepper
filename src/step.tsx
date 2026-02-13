@@ -29,6 +29,11 @@ function Step({ children }: { children: React.ReactNode }) {
     changeStepAtIndex: changeStepAtIndexFromParent,
     registrationKey: registrationKeyFromParent,
   } = stepContext ?? formContext
+
+  const isRoot = useMemo(() => {
+    if (!stepContext) return true
+    return false
+  }, [stepContext])
   const stepRef = useRef<number | undefined>(undefined)
   const [steps, setSteps] = useState<StepTree>([])
   const [registrationKey, setRegistrationKey] = useState(0)
@@ -42,14 +47,14 @@ function Step({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (steps.length > 0) {
-      if (stepRef.current !== undefined) {
-        changeStepAtIndexFromParent(steps, stepRef.current)
-      } else {
-        registerStepFromParent(steps, stepRef)
-      }
+    if (isRoot && steps.length === 0) return
+    const stepList = steps.length ? steps : ['']
+    if (stepRef.current !== undefined) {
+      changeStepAtIndexFromParent(stepList, stepRef.current)
+    } else {
+      registerStepFromParent(stepList, stepRef)
     }
-  }, [registrationKeyFromParent, steps])
+  }, [registrationKeyFromParent, steps, isRoot])
 
   useEffect(() => {
     if (stepFromParent !== undefined) {
