@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useFormContext } from './form'
+import { useInternalFormContext } from './form'
 import { type StepTree } from './types'
 
 type StepContextValue = {
@@ -20,7 +20,7 @@ function useStep(): StepContextValue | null {
 
 function Step({ children }: { children: React.ReactNode }) {
   const stepContext = useStep()
-  const formContext = useFormContext()
+  const formContext = useInternalFormContext()
 
   const {
     registerStep: registerStepFromParent,

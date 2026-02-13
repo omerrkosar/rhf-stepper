@@ -94,7 +94,6 @@ function getNextLeafParentPath(tree: StepTree, path: number[]): number[] | null 
 
 type FormContextValue<TFieldValues extends FieldValues = FieldValues> = {
   form: UseFormReturn<TFieldValues>
-  step?: number
   currentStep: number | number[] | null
   setCurrentStep: (step: number | number[]) => Promise<void>
   currentStepNode: StepTree | undefined
@@ -102,15 +101,20 @@ type FormContextValue<TFieldValues extends FieldValues = FieldValues> = {
   validatedFields: string[]
   isFirstStep: boolean
   isLastStep: boolean
-  registrationKey: number
   next: () => void
   prev: () => void
+}
+
+type InternalFormContextValue = {
+  step?: number
+  registrationKey: number
   rebuildSteps: () => void
   registerStep: (elements: StepTree, stepRef: React.RefObject<number | undefined>, step?: number) => void
   changeStepAtIndex: (elements: StepTree, index: number) => void
 }
 
 const FormContext = createContext<FormContextValue | null>(null)
+const InternalFormContext = createContext<InternalFormContextValue | null>(null)
 
 function useFormContext<TFieldValues extends FieldValues = FieldValues>(): FormContextValue<TFieldValues> {
   const context = useContext(FormContext)
@@ -118,6 +122,14 @@ function useFormContext<TFieldValues extends FieldValues = FieldValues>(): FormC
     throw new Error('useFormContext must be used within a <Form>')
   }
   return context as unknown as FormContextValue<TFieldValues>
+}
+
+function useInternalFormContext(): InternalFormContextValue {
+  const context = useContext(InternalFormContext)
+  if (!context) {
+    throw new Error('useInternalFormContext must be used within a <Form>')
+  }
+  return context
 }
 
 interface FormProps<TFieldValues extends FieldValues = FieldValues>
@@ -243,10 +255,8 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     })
   }, [])
 
-  const contextValue = useMemo<FormContextValue>(
+  const publicContextValue = useMemo<FormContextValue>(
     () => ({
-      // eslint-disable-next-line react-hooks/refs
-      step: stepRef.current,
       currentStep: _currentStep,
       setCurrentStep: _setCurrentStep,
       currentStepNode,
@@ -255,12 +265,8 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
       isFirstStep,
       isLastStep,
       form: form as unknown as UseFormReturn<FieldValues>,
-      registrationKey,
       next,
       prev,
-      rebuildSteps,
-      registerStep,
-      changeStepAtIndex,
     }),
     [
       form,
@@ -271,25 +277,35 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
       validatedFields,
       isFirstStep,
       isLastStep,
-      registrationKey,
       next,
       prev,
+    ],
+  )
+
+  const internalContextValue = useMemo<InternalFormContextValue>(
+    () => ({
+      // eslint-disable-next-line react-hooks/refs
+      step: stepRef.current,
+      registrationKey,
       rebuildSteps,
       registerStep,
       changeStepAtIndex,
-    ],
+    }),
+    [registrationKey, rebuildSteps, registerStep, changeStepAtIndex],
   )
 
   const resolvedChildren =
     // eslint-disable-next-line react-hooks/refs
-    typeof children === 'function' ? children(contextValue as unknown as FormContextValue<TFieldValues>) : children
+    typeof children === 'function' ? children(publicContextValue as unknown as FormContextValue<TFieldValues>) : children
 
   return (
     // eslint-disable-next-line react-hooks/refs
-    <FormContext.Provider value={contextValue}>
-      <form ref={ref} onSubmit={form.handleSubmit(onSubmit)} {...props}>
-        <Step>{resolvedChildren}</Step>
-      </form>
+    <FormContext.Provider value={publicContextValue}>
+      <InternalFormContext.Provider value={internalContextValue}>
+        <form ref={ref} onSubmit={form.handleSubmit(onSubmit)} {...props}>
+          <Step>{resolvedChildren}</Step>
+        </form>
+      </InternalFormContext.Provider>
     </FormContext.Provider>
   )
 }
@@ -300,5 +316,5 @@ const Form = forwardRef(FormInner) as <TFieldValues extends FieldValues = FieldV
 
 ;(Form as React.NamedExoticComponent & { displayName?: string }).displayName = 'Form'
 
-export { Form, useFormContext }
-export type { FormContextValue, FormProps }
+export { Form, useFormContext, useInternalFormContext }
+export type { FormContextValue, InternalFormContextValue, FormProps }
