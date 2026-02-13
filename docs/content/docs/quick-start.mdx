@@ -1,0 +1,148 @@
+---
+title: Quick Start
+description: Build your first multi-step form with rhf-stepper
+---
+
+## Setup
+
+First, install `rhf-stepper` and its peer dependencies:
+
+```bash
+pnpm add rhf-stepper react-hook-form
+```
+
+## Create a Multi-Step Form
+
+A multi-step form with `rhf-stepper` consists of four parts:
+
+1. **`Form`** — The root component that wraps your form
+2. **`Step`** — Groups fields into a logical step
+3. **`Controller`** — Registers fields with the nearest step
+4. **`useFormContext`** — Access stepper state from any child component
+
+### Step 1: Create the form
+
+```tsx
+import { useForm } from 'react-hook-form'
+import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
+
+type SignupForm = {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+}
+
+function SignupWizard() {
+  const form = useForm<SignupForm>()
+
+  return (
+    <Form form={form} onSubmit={(data) => console.log(data)}>
+      {({ currentStep }) => (
+        <>
+          {/* Step 1: Account */}
+          <Step>
+            {currentStep === 0 && (
+              <>
+                <Controller
+                  name="email"
+                  rules={{ required: 'Email is required' }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="email" placeholder="Email" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="password"
+                  rules={{
+                    required: 'Password is required',
+                    minLength: { value: 8, message: 'Min 8 characters' },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="password" placeholder="Password" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+              </>
+            )}
+          </Step>
+
+          {/* Step 2: Profile */}
+          <Step>
+            {currentStep === 1 && (
+              <>
+                <Controller
+                  name="firstName"
+                  rules={{ required: 'First name is required' }}
+                  render={({ field }) => <input {...field} placeholder="First Name" />}
+                />
+                <Controller
+                  name="lastName"
+                  rules={{ required: 'Last name is required' }}
+                  render={({ field }) => <input {...field} placeholder="Last Name" />}
+                />
+              </>
+            )}
+          </Step>
+
+          <Navigation />
+        </>
+      )}
+    </Form>
+  )
+}
+```
+
+### Step 2: Add navigation
+
+```tsx
+function Navigation() {
+  const { next, prev, isFirstStep, isLastStep } = useFormContext()
+
+  return (
+    <div>
+      {!isFirstStep && (
+        <button type="button" onClick={prev}>
+          Back
+        </button>
+      )}
+      {!isLastStep && (
+        <button type="button" onClick={next}>
+          Next
+        </button>
+      )}
+      {isLastStep && <button type="submit">Submit</button>}
+    </div>
+  )
+}
+```
+
+### How it works
+
+1. `Form` wraps your `<form>` element and creates stepper context
+2. Each `Step` registers itself in the step tree when it mounts
+3. Each `Controller` registers its field name with the nearest `Step`
+4. When `next()` is called, the current step's fields are validated before navigating
+5. When the last step submits, `onSubmit` is called with all form values
+
+<Callout type="warn">
+**Important:** Always keep `<Step>` components mounted. Only conditionally render the children (fields) inside each step — not the `<Step>` itself.
+</Callout>
+
+```tsx
+// ✅ Correct — Step is always mounted
+<Step>
+  {currentStep === 0 && <Controller name="email" ... />}
+</Step>
+
+// ❌ Wrong — Step is conditionally mounted
+{currentStep === 0 && (
+  <Step>
+    <Controller name="email" ... />
+  </Step>
+)}
+```

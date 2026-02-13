@@ -1,0 +1,175 @@
+---
+title: Examples
+description: Usage examples for common multi-step form patterns
+---
+
+## Basic Two-Step Form
+
+A signup wizard with validation on each step:
+
+```tsx
+import { useForm } from 'react-hook-form'
+import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
+
+type SignupForm = {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+}
+
+function SignupWizard() {
+  const form = useForm<SignupForm>()
+
+  return (
+    <Form form={form} onSubmit={(data) => console.log(data)}>
+      {({ currentStep }) => (
+        <>
+          <Step>
+            {currentStep === 0 && (
+              <>
+                <Controller
+                  name="email"
+                  rules={{ required: 'Email is required' }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="email" placeholder="Email" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="password"
+                  rules={{
+                    required: 'Password is required',
+                    minLength: { value: 8, message: 'Min 8 characters' },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <div>
+                      <input {...field} type="password" placeholder="Password" />
+                      {fieldState.error && <p>{fieldState.error.message}</p>}
+                    </div>
+                  )}
+                />
+              </>
+            )}
+          </Step>
+
+          <Step>
+            {currentStep === 1 && (
+              <>
+                <Controller
+                  name="firstName"
+                  rules={{ required: 'First name is required' }}
+                  render={({ field }) => <input {...field} placeholder="First Name" />}
+                />
+                <Controller
+                  name="lastName"
+                  rules={{ required: 'Last name is required' }}
+                  render={({ field }) => <input {...field} placeholder="Last Name" />}
+                />
+              </>
+            )}
+          </Step>
+
+          <Navigation />
+        </>
+      )}
+    </Form>
+  )
+}
+
+function Navigation() {
+  const { next, prev, isFirstStep, isLastStep } = useFormContext()
+
+  return (
+    <div>
+      {!isFirstStep && <button type="button" onClick={prev}>Back</button>}
+      {!isLastStep && <button type="button" onClick={next}>Next</button>}
+      {isLastStep && <button type="submit">Submit</button>}
+    </div>
+  )
+}
+```
+
+## Step Indicator with Jump Navigation
+
+Allow users to jump to any step:
+
+```tsx
+function StepIndicator() {
+  const { currentStep, setCurrentStep } = useFormContext()
+
+  const steps = ['Account', 'Profile', 'Review']
+
+  return (
+    <nav style={{ display: 'flex', gap: '1rem' }}>
+      {steps.map((label, index) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => setCurrentStep(index)}
+          style={{
+            fontWeight: currentStep === index ? 'bold' : 'normal',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
+  )
+}
+```
+
+<Callout>
+When using `setCurrentStep`, the current step is validated before navigating (based on `stepValidationMode`). If validation fails, navigation is prevented.
+</Callout>
+
+## Skip Validation
+
+Use `stepValidationMode="none"` to allow free navigation between steps:
+
+```tsx
+<Form form={form} onSubmit={handleSubmit} stepValidationMode="none">
+  {({ currentStep }) => (
+    <>
+      <Step>{currentStep === 0 && /* ... */}</Step>
+      <Step>{currentStep === 1 && /* ... */}</Step>
+      <Step>{currentStep === 2 && /* ... */}</Step>
+      <Navigation />
+    </>
+  )}
+</Form>
+```
+
+## Accessing the Form Instance
+
+Use the `form` property from `useFormContext` to access the full react-hook-form API:
+
+```tsx
+function ResetButton() {
+  const { form } = useFormContext<MyFormValues>()
+
+  return (
+    <button type="button" onClick={() => form.reset()}>
+      Reset Form
+    </button>
+  )
+}
+```
+
+## Conditional Step Content
+
+You can render any content inside a step — not just `Controller` fields:
+
+```tsx
+<Step>
+  {currentStep === 2 && (
+    <div>
+      <h2>Review Your Information</h2>
+      <p>Email: {form.getValues('email')}</p>
+      <p>Name: {form.getValues('firstName')} {form.getValues('lastName')}</p>
+    </div>
+  )}
+</Step>
+```

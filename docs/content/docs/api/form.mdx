@@ -1,0 +1,83 @@
+---
+title: <Form>
+description: The root component that manages step state and validation
+---
+
+The `Form` component replaces the standard `<form>` element. It creates the stepper context, manages step state, and handles validation.
+
+## Usage
+
+```tsx
+import { useForm } from 'react-hook-form'
+import { Form } from 'rhf-stepper'
+
+function MyForm() {
+  const form = useForm()
+
+  return (
+    <Form form={form} onSubmit={(data) => console.log(data)}>
+      {/* Steps go here */}
+    </Form>
+  )
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `form` | `UseFormReturn<T>` | *required* | The form instance from `useForm()` |
+| `onSubmit` | `(values: T) => void` | *required* | Called with form values on valid submission |
+| `stepValidationMode` | `'forward' \| 'all' \| 'none'` | `'forward'` | When to validate step fields |
+| `children` | `ReactNode \| (context) => ReactNode` | *required* | Form content |
+| `ref` | `Ref<HTMLFormElement>` | - | Ref forwarded to the underlying `<form>` element |
+
+All other props are passed through to the underlying `<form>` element (e.g., `className`, `id`).
+
+## Validation Modes
+
+| Mode | Description |
+|------|-------------|
+| `'forward'` | Validates current step fields only when navigating forward (via `next()` or `setCurrentStep` to a later step) |
+| `'all'` | Validates current step fields on every navigation (forward and backward) |
+| `'none'` | No automatic validation. Navigate freely between steps |
+
+### Forward validation (default)
+
+```tsx
+<Form form={form} onSubmit={handleSubmit} stepValidationMode="forward">
+  {/* Validates only when moving to the next step */}
+</Form>
+```
+
+### Skip all validation
+
+```tsx
+<Form form={form} onSubmit={handleSubmit} stepValidationMode="none">
+  {/* Users can freely navigate between steps */}
+</Form>
+```
+
+## Render Function
+
+When using a render function as children, you receive the full `FormContextValue`:
+
+```tsx
+<Form form={form} onSubmit={handleSubmit}>
+  {({ currentStep, isFirstStep, isLastStep, next, prev }) => (
+    <>
+      <Step>
+        {currentStep === 0 && (
+          <Controller name="email" render={({ field }) => <input {...field} />} />
+        )}
+      </Step>
+
+      {!isFirstStep && <button type="button" onClick={prev}>Back</button>}
+      {!isLastStep && <button type="button" onClick={next}>Next</button>}
+      {isLastStep && <button type="submit">Submit</button>}
+    </>
+  )}
+</Form>
+```
+
+This is useful when you need access to stepper state directly in the form component without creating a separate child component.

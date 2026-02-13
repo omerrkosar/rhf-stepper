@@ -1,0 +1,74 @@
+---
+title: <Controller>
+description: Drop-in replacement for react-hook-form's Controller with step-aware registration
+---
+
+The `Controller` component is a drop-in replacement for react-hook-form's `Controller`. It automatically registers the field with the nearest `Step` for step-aware validation.
+
+## Usage
+
+```tsx
+import { Controller } from 'rhf-stepper'
+
+<Controller
+  name="email"
+  rules={{ required: 'Email is required' }}
+  render={({ field, fieldState }) => (
+    <div>
+      <input {...field} />
+      {fieldState.error && <span>{fieldState.error.message}</span>}
+    </div>
+  )}
+/>
+```
+
+## Props
+
+Same as [react-hook-form's Controller](https://react-hook-form.com/docs/usecontroller/controller). The `control` prop is optional — it's automatically resolved from the `Form` context.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `name` | `FieldPath<T>` | The field name |
+| `render` | `(args: ControllerRenderArgs) => ReactElement` | Render function for the field |
+| `rules` | `RegisterOptions` | Validation rules |
+| `control` | `Control<T>` | *(optional)* Form control — auto-resolved from `Form` context |
+| `defaultValue` | `T[name]` | Default value for the field |
+| `shouldUnregister` | `boolean` | Whether to unregister the field on unmount |
+
+## Auto-Registration
+
+When a `Controller` mounts inside a `Step`, it automatically registers its field name with that step. This means:
+
+- The field is included in step validation when navigating
+- No manual configuration of which fields belong to which step
+- Fields are tracked in the `currentStepArr` property of the form context
+
+```tsx
+<Step>
+  {currentStep === 0 && (
+    <>
+      {/* Both fields auto-register with this Step */}
+      <Controller name="firstName" render={({ field }) => <input {...field} />} />
+      <Controller name="lastName" render={({ field }) => <input {...field} />} />
+    </>
+  )}
+</Step>
+```
+
+## With Validation
+
+```tsx
+<Controller
+  name="password"
+  rules={{
+    required: 'Password is required',
+    minLength: { value: 8, message: 'Minimum 8 characters' },
+  }}
+  render={({ field, fieldState }) => (
+    <div>
+      <input {...field} type="password" placeholder="Password" />
+      {fieldState.error && <p>{fieldState.error.message}</p>}
+    </div>
+  )}
+/>
+```
