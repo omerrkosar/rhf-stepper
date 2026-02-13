@@ -1,0 +1,52 @@
+{
+  "name": "rhf-stepper",
+  "version": "0.1.0",
+  "description": "A multi-step form helper for react-hook-form",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "react",
+    "react-hook-form",
+    "stepper",
+    "multi-step-form",
+    "wizard",
+    "form"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-hook-form": ">=7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "react": "^19.2.4",
+    "react-hook-form": "^7.71.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.28.0"
+}
