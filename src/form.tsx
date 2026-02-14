@@ -95,14 +95,14 @@ function getNextLeafParentPath(tree: StepTree, path: number[]): number[] | null 
 type FormContextValue<TFieldValues extends FieldValues = FieldValues> = {
   form: UseFormReturn<TFieldValues>
   currentStep: number | number[] | null
-  setCurrentStep: (step: number | number[]) => Promise<void>
+  setCurrentStep: (step: number | number[]) => Promise<boolean>
   currentStepNode: StepTree | undefined
   currentStepArr: string[] | null
   validatedFields: string[]
   isFirstStep: boolean
   isLastStep: boolean
-  next: () => void
-  prev: () => void
+  next: () => Promise<boolean>
+  prev: () => Promise<boolean>
 }
 
 type InternalFormContextValue = {
@@ -168,7 +168,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
   }, [currentStepNode])
 
   const _setCurrentStep = useCallback(
-    async (step: number | number[]) => {
+    async (step: number | number[]): Promise<boolean> => {
       const path = typeof step === 'number' ? [0, step] : [0, ...step]
       if (currentStep && currentStepArr && stepValidationMode !== 'none') {
         const isForward = comparePaths(path, currentStep) > 0
@@ -177,12 +177,13 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
           const isValid = await form.trigger(currentStepArr as Path<TFieldValues>[])
           if (!isValid) {
             setValidatedFields((prev) => prev.filter((field) => !currentStepArr.includes(field)))
-            return
+            return false
           }
           setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
         }
       }
       setCurrentStep(path)
+      return true
     },
     [currentStep, currentStepArr, form, stepValidationMode],
   )
@@ -197,36 +198,40 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     [steps, currentStep],
   )
 
-  const next = useCallback(async () => {
-    if (!currentStep) return
+  const next = useCallback(async (): Promise<boolean> => {
+    if (!currentStep) return false
     const nextPath = getNextLeafParentPath(steps, currentStep)
     if (currentStepArr && stepValidationMode !== 'none') {
       const isValid = await form.trigger(currentStepArr as Path<TFieldValues>[])
       if (!isValid) {
         setValidatedFields((prev) => prev.filter((field) => !currentStepArr.includes(field)))
-        return
+        return false
       }
       setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
     }
     if (nextPath) {
       setCurrentStep(nextPath)
+      return true
     }
+    return false
   }, [steps, currentStep, currentStepArr, form, stepValidationMode])
 
-  const prev = useCallback(async () => {
-    if (!currentStep) return
+  const prev = useCallback(async (): Promise<boolean> => {
+    if (!currentStep) return false
     const prevPath = getPrevLeafParentPath(steps, currentStep)
     if (currentStepArr && stepValidationMode === 'all') {
       const isValid = await form.trigger(currentStepArr as Path<TFieldValues>[])
       if (!isValid) {
         setValidatedFields((prev) => prev.filter((field) => !currentStepArr.includes(field)))
-        return
+        return false
       }
       setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
     }
     if (prevPath) {
       setCurrentStep(prevPath)
+      return true
     }
+    return false
   }, [steps, currentStep, currentStepArr, form, stepValidationMode])
 
   const registerStep = useCallback(
