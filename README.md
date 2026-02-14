@@ -2,7 +2,7 @@
 
 A lightweight, headless multi-step form helper for [react-hook-form](https://react-hook-form.com). Build wizards, multi-step forms, and stepped workflows with automatic per-step validation. Bring your own UI — rhf-stepper handles the logic.
 
-[Documentation](https://rhf-stepper-docs-git-master-omerrkosars-projects.vercel.app)
+[Documentation](https://rhf-stepper-docs-git-master-omerrkosars-projects.vercel.app/docs)
 
 ## Installation
 
