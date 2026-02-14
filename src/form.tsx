@@ -213,13 +213,21 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     }
   }, [steps, currentStep, currentStepArr, form, stepValidationMode])
 
-  const prev = useCallback(() => {
+  const prev = useCallback(async () => {
     if (!currentStep) return
     const prevPath = getPrevLeafParentPath(steps, currentStep)
+    if (currentStepArr && stepValidationMode === 'all') {
+      const isValid = await form.trigger(currentStepArr as Path<TFieldValues>[])
+      if (!isValid) {
+        setValidatedFields((prev) => prev.filter((field) => !currentStepArr.includes(field)))
+        return
+      }
+      setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
+    }
     if (prevPath) {
       setCurrentStep(prevPath)
     }
-  }, [steps, currentStep])
+  }, [steps, currentStep, currentStepArr, form, stepValidationMode])
 
   const registerStep = useCallback(
     (elements: StepTree, stepRef: React.RefObject<number | undefined>, step?: number): void => {
