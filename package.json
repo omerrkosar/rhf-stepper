@@ -1,6 +1,6 @@
 {
   "name": "rhf-stepper",
-  "version": "0.1.3",
+  "version": "0.1.6",
   "description": "A multi-step form helper for react-hook-form",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -33,8 +33,17 @@
     "stepper",
     "multi-step-form",
     "wizard",
-    "form"
+    "form",
+    "headless"
   ],
+  "homepage": "https://rhf-stepper-docs-git-master-omerrkosars-projects.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/omerrkosar/rhf-stepper"
+  },
+  "bugs": {
+    "url": "https://github.com/omerrkosar/rhf-stepper/issues"
+  },
   "author": "",
   "license": "MIT",
   "peerDependencies": {
