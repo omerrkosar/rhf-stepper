@@ -95,14 +95,14 @@ function getNextLeafParentPath(tree: StepTree, path: number[]): number[] | null 
 type FormContextValue<TFieldValues extends FieldValues = FieldValues> = {
   form: UseFormReturn<TFieldValues>
   currentStep: number | number[] | null
-  setCurrentStep: (step: number | number[]) => Promise<boolean>
+  setCurrentStep: (step: number | number[], beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>) => Promise<boolean>
   currentStepNode: StepTree | undefined
   currentStepArr: string[] | null
   validatedFields: string[]
   isFirstStep: boolean
   isLastStep: boolean
-  next: () => Promise<boolean>
-  prev: () => Promise<boolean>
+  next: (beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>) => Promise<boolean>
+  prev: (beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>) => Promise<boolean>
 }
 
 type InternalFormContextValue = {
@@ -168,7 +168,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
   }, [currentStepNode])
 
   const _setCurrentStep = useCallback(
-    async (step: number | number[]): Promise<boolean> => {
+    async (step: number | number[], beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>): Promise<boolean> => {
       const path = typeof step === 'number' ? [0, step] : [0, ...step]
       if (currentStep && currentStepArr && stepValidationMode !== 'none') {
         const isForward = comparePaths(path, currentStep) > 0
@@ -181,6 +181,11 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
           }
           setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
         }
+      }
+      if (beforeStepChange && currentStepArr) {
+        const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
+        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        await beforeStepChange(values)
       }
       setCurrentStep(path)
       return true
@@ -198,7 +203,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     [steps, currentStep],
   )
 
-  const next = useCallback(async (): Promise<boolean> => {
+  const next = useCallback(async (beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>): Promise<boolean> => {
     if (!currentStep) return false
     const nextPath = getNextLeafParentPath(steps, currentStep)
     if (currentStepArr && stepValidationMode !== 'none') {
@@ -210,13 +215,18 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
       setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
     }
     if (nextPath) {
+      if (beforeStepChange && currentStepArr) {
+        const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
+        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        await beforeStepChange(values)
+      }
       setCurrentStep(nextPath)
       return true
     }
     return false
   }, [steps, currentStep, currentStepArr, form, stepValidationMode])
 
-  const prev = useCallback(async (): Promise<boolean> => {
+  const prev = useCallback(async (beforeStepChange?: (values: Partial<TFieldValues>) => Promise<void>): Promise<boolean> => {
     if (!currentStep) return false
     const prevPath = getPrevLeafParentPath(steps, currentStep)
     if (currentStepArr && stepValidationMode === 'all') {
@@ -228,6 +238,11 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
       setValidatedFields((prev) => [...new Set([...prev, ...currentStepArr])])
     }
     if (prevPath) {
+      if (beforeStepChange && currentStepArr) {
+        const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
+        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        await beforeStepChange(values)
+      }
       setCurrentStep(prevPath)
       return true
     }
