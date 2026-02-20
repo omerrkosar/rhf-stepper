@@ -183,7 +183,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
 
   const currentStepArr = useMemo<string[] | null>(() => {
     if (!currentStepNode) return null
-    return isLeafParent(currentStepNode) ? currentStepNode : null
+    return isLeafParent(currentStepNode) ? Array.from(new Set(currentStepNode)) : null
   }, [currentStepNode])
 
   const _setCurrentStep = useCallback(
