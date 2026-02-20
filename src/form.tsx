@@ -4,6 +4,25 @@ import { type FieldValues, Path, type UseFormReturn } from 'react-hook-form'
 import { Step } from './step'
 import { type StepTree, type StepValidationMode } from './types'
 
+function buildNestedValues(fields: string[], values: unknown[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (let i = 0; i < fields.length; i++) {
+    const segments = fields[i].split('.')
+    let current: Record<string, unknown> = result
+    for (let j = 0; j < segments.length - 1; j++) {
+      const segment = segments[j]
+      const nextSegment = segments[j + 1]
+      const isNextNumeric = /^\d+$/.test(nextSegment)
+      if (current[segment] === undefined) {
+        current[segment] = isNextNumeric ? [] : {}
+      }
+      current = current[segment] as Record<string, unknown>
+    }
+    current[segments[segments.length - 1]] = values[i]
+  }
+  return result
+}
+
 function comparePaths(a: number[], b: number[]): number {
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const ai = a[i] ?? -1
@@ -184,7 +203,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
       }
       if (beforeStepChange && currentStepArr) {
         const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
-        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        const values = buildNestedValues(currentStepArr, watchedValues) as Partial<TFieldValues>
         await beforeStepChange(values)
       }
       setCurrentStep(path)
@@ -217,7 +236,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     if (nextPath) {
       if (beforeStepChange && currentStepArr) {
         const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
-        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        const values = buildNestedValues(currentStepArr, watchedValues) as Partial<TFieldValues>
         await beforeStepChange(values)
       }
       setCurrentStep(nextPath)
@@ -240,7 +259,7 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
     if (prevPath) {
       if (beforeStepChange && currentStepArr) {
         const watchedValues = form.watch(currentStepArr as Path<TFieldValues>[])
-        const values = currentStepArr.reduce((acc, field, i) => { acc[field] = watchedValues[i]; return acc }, {} as Record<string, unknown>) as Partial<TFieldValues>
+        const values = buildNestedValues(currentStepArr, watchedValues) as Partial<TFieldValues>
         await beforeStepChange(values)
       }
       setCurrentStep(prevPath)
