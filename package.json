@@ -1,6 +1,6 @@
 {
   "name": "rhf-stepper",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "A multi-step form helper for react-hook-form",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -36,7 +36,7 @@
     "form",
     "headless"
   ],
-  "homepage": "https://rhf-stepper-docs-git-master-omerrkosars-projects.vercel.app",
+  "homepage": "https://rhf-stepper-docs.vercel.app/docs",
   "repository": {
     "type": "git",
     "url": "https://github.com/omerrkosar/rhf-stepper"
