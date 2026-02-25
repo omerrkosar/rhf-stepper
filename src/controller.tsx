@@ -9,7 +9,6 @@ import {
   type UseFormStateReturn,
 } from 'react-hook-form'
 
-import { useFormContext } from './form'
 import { useStep } from './step'
 
 type ControllerRenderArgs<
@@ -29,14 +28,12 @@ type ControllerProps<
 function Controller<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->({ name, control, ...rest }: ControllerProps<TFieldValues, TName>) {
-  const formContext = useFormContext<TFieldValues>()
+>({ name, ...rest }: ControllerProps<TFieldValues, TName>) {
   const stepContext = useStep()
-  const resolvedControl = control ?? (formContext.form.control as unknown as Control<TFieldValues>)
 
   useEffect(() => {
-    if (stepContext) {
-      stepContext.registerField([name as string])
+    if (stepContext && stepContext?.registrationKey !== 0) {
+      stepContext.registerField(name)
     }
   }, [stepContext?.registrationKey])
 
@@ -49,7 +46,7 @@ function Controller<
     }
   }, [])
 
-  return <RHFController name={name} control={resolvedControl} {...rest} />
+  return <RHFController name={name} {...rest} />
 }
 
 Controller.displayName = 'Controller'
