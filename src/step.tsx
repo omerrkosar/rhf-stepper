@@ -1,15 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useInternalFormContext } from './form'
-import { type StepTree } from './types'
+import { useInternalStepperContext } from './stepper'
 
 type StepContextValue = {
   step?: number
   registrationKey: number
-  registerField: (elements: StepTree) => void
-  registerStep: (elements: StepTree, stepRef: React.RefObject<number | undefined>, step?: number) => void
+  registerField: (elements: string) => void
+  registerStep: (elements: string[], stepRef: React.RefObject<number | undefined>, step?: number) => void
   rebuildSteps: () => void
-  changeStepAtIndex: (steps: StepTree, index: number) => void
+  changeStepAtIndex: (elements: string[], index: number) => void
 }
 
 const StepContext = createContext<StepContextValue | null>(null)
@@ -19,8 +18,7 @@ function useStep(): StepContextValue | null {
 }
 
 function Step({ children }: { children: React.ReactNode }) {
-  const stepContext = useStep()
-  const formContext = useInternalFormContext()
+  const formContext = useInternalStepperContext()
 
   const {
     registerStep: registerStepFromParent,
@@ -28,33 +26,26 @@ function Step({ children }: { children: React.ReactNode }) {
     rebuildSteps: rebuildStepsFromParent,
     changeStepAtIndex: changeStepAtIndexFromParent,
     registrationKey: registrationKeyFromParent,
-  } = stepContext ?? formContext
+  } = formContext
 
-  const isRoot = useMemo(() => {
-    if (!stepContext) return true
-    return false
-  }, [stepContext])
+
   const stepRef = useRef<number | undefined>(undefined)
-  const [steps, setSteps] = useState<StepTree>([])
+  const [steps, setSteps] = useState<string[]>([])
+
   const [registrationKey, setRegistrationKey] = useState(0)
 
-  const changeStepAtIndex = useCallback((steps: StepTree, index: number): void => {
-    setSteps((prevSteps) => {
-      const newSteps = [...prevSteps]
-      newSteps[index] = steps
-      return newSteps
-    })
+  const changeStepAtIndex = useCallback((elements: string[], _index: number): void => {
+    setSteps(elements)
   }, [])
 
   useEffect(() => {
-    if (isRoot && steps.length === 0) return
     const stepList = steps.length ? steps : ['']
     if (stepRef.current !== undefined) {
       changeStepAtIndexFromParent(stepList, stepRef.current)
     } else {
       registerStepFromParent(stepList, stepRef)
     }
-  }, [registrationKeyFromParent, steps, isRoot])
+  }, [registrationKeyFromParent, steps])
 
   useEffect(() => {
     if (stepFromParent !== undefined) {
@@ -66,21 +57,21 @@ function Step({ children }: { children: React.ReactNode }) {
   }, [])
 
   const registerField = useCallback(
-    (elements: StepTree): void => {
+    (element: string): void => {
       setSteps((prevSteps) => {
-        return [...prevSteps, ...elements]
+        return [...prevSteps, element]
       })
     },
     [steps],
   )
 
   const registerStep = useCallback(
-    (elements: StepTree, stepRef: React.RefObject<number | undefined>, step?: number): void => {
-      setSteps((prevSteps: StepTree) => {
+    (elements: string[], stepRef: React.RefObject<number | undefined>, step?: number): void => {
+      setSteps((prevSteps) => {
         const stepNumber = step ?? prevSteps.length
         stepRef.current = stepNumber
         const newSteps = [...prevSteps]
-        newSteps.splice(stepNumber, 0, elements)
+        newSteps.splice(stepNumber, 0, ...elements)
         return newSteps
       })
     },
