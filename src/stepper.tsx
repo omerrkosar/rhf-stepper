@@ -2,17 +2,17 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import { type FieldValues, Path, useFormContext, type UseFormReturn } from 'react-hook-form'
 
 import { buildNestedValues } from './helper'
-import { type StepValidationMode } from './types'
+import { type StepValidationMode, type MaybePromise } from './types'
 
 type StepperContextValue<TFieldValues extends FieldValues = FieldValues> = {
   activeStep: number
-  jumpTo: (step: number, onLeave?: (values: Partial<TFieldValues>) => Promise<void>) => Promise<boolean>
+  jumpTo: (step: number, onLeave?: (values: Partial<TFieldValues>) => MaybePromise<void>) => Promise<boolean>
   fields: string[] | null
   validSteps: number[]
   isFirstStep: boolean
   isLastStep: boolean
-  next: (onLeave?: ((values: Partial<TFieldValues>) => Promise<void>) | unknown) => Promise<boolean>
-  prev: (onLeave?: ((values: Partial<TFieldValues>) => Promise<void>) | unknown) => Promise<boolean>
+  next: (onLeave?: ((values: Partial<TFieldValues>) => MaybePromise<void>) | unknown) => Promise<boolean>
+  prev: (onLeave?: ((values: Partial<TFieldValues>) => MaybePromise<void>) | unknown) => Promise<boolean>
 }
 
 type InternalStepperContextValue = {
@@ -60,7 +60,7 @@ function Stepper<TFieldValues extends FieldValues = FieldValues>(
   }, [steps, activeStep])
 
   const jumpTo = useCallback(
-    async (step: number, onLeave?: (values: Partial<TFieldValues>) => Promise<void>): Promise<boolean> => {
+    async (step: number, onLeave?: (values: Partial<TFieldValues>) => MaybePromise<void>): Promise<boolean> => {
       if (activeStep !== -1 && fields && stepValidationMode !== 'none') {
         const isForward = step > activeStep
         const shouldValidate = stepValidationMode === 'all' || (stepValidationMode === 'forward' && isForward)
@@ -94,8 +94,8 @@ function Stepper<TFieldValues extends FieldValues = FieldValues>(
     [activeStep, steps.length],
   )
 
-  const next = useCallback(async (onLeave?: ((values: Partial<TFieldValues>) => Promise<void>) | unknown): Promise<boolean> => {
-    const callback = typeof onLeave === 'function' ? onLeave as (values: Partial<TFieldValues>) => Promise<void> : undefined
+  const next = useCallback(async (onLeave?: ((values: Partial<TFieldValues>) => MaybePromise<void>) | unknown): Promise<boolean> => {
+    const callback = typeof onLeave === 'function' ? onLeave as (values: Partial<TFieldValues>) => MaybePromise<void> : undefined
     if (activeStep === -1 || activeStep >= steps.length - 1) return false
     if (fields && stepValidationMode !== 'none') {
       const isValid = await form.trigger(fields as Path<TFieldValues>[])
@@ -114,8 +114,8 @@ function Stepper<TFieldValues extends FieldValues = FieldValues>(
     return true
   }, [steps.length, activeStep, fields, form, stepValidationMode])
 
-  const prev = useCallback(async (onLeave?: ((values: Partial<TFieldValues>) => Promise<void>) | unknown): Promise<boolean> => {
-    const callback = typeof onLeave === 'function' ? onLeave as (values: Partial<TFieldValues>) => Promise<void> : undefined
+  const prev = useCallback(async (onLeave?: ((values: Partial<TFieldValues>) => MaybePromise<void>) | unknown): Promise<boolean> => {
+    const callback = typeof onLeave === 'function' ? onLeave as (values: Partial<TFieldValues>) => MaybePromise<void> : undefined
     if (activeStep === -1 || activeStep <= 0) return false
     if (fields && stepValidationMode === 'all') {
       const isValid = await form.trigger(fields as Path<TFieldValues>[])
