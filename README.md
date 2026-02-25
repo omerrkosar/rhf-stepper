@@ -26,8 +26,8 @@ yarn add rhf-stepper
 ## Quick Start
 
 ```tsx
-import { useForm } from 'react-hook-form'
-import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
+import { useForm, FormProvider } from 'react-hook-form'
+import { Stepper, Step, Controller, useStepper } from 'rhf-stepper'
 
 type FormValues = {
   name: string
@@ -40,36 +40,40 @@ function MyMultiStepForm() {
   const form = useForm<FormValues>()
 
   return (
-    <Form form={form} onSubmit={(data) => console.log(data)}>
-      {({ currentStep }) => (
-        <>
-          <Step>
-            {currentStep === 0 && (
-              <>
-                <Controller name="name" render={({ field }) => <input {...field} placeholder="Name" />} />
-                <Controller name="email" render={({ field }) => <input {...field} placeholder="Email" />} />
-              </>
-            )}
-          </Step>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit((data) => console.log(data))}>
+        <Stepper>
+          {({ activeStep }) => (
+            <>
+              <Step>
+                {activeStep === 0 && (
+                  <>
+                    <Controller name="name" render={({ field }) => <input {...field} placeholder="Name" />} />
+                    <Controller name="email" render={({ field }) => <input {...field} placeholder="Email" />} />
+                  </>
+                )}
+              </Step>
 
-          <Step>
-            {currentStep === 1 && (
-              <>
-                <Controller name="address" render={({ field }) => <input {...field} placeholder="Address" />} />
-                <Controller name="city" render={({ field }) => <input {...field} placeholder="City" />} />
-              </>
-            )}
-          </Step>
+              <Step>
+                {activeStep === 1 && (
+                  <>
+                    <Controller name="address" render={({ field }) => <input {...field} placeholder="Address" />} />
+                    <Controller name="city" render={({ field }) => <input {...field} placeholder="City" />} />
+                  </>
+                )}
+              </Step>
 
-          <StepNavigation />
-        </>
-      )}
-    </Form>
+              <StepNavigation />
+            </>
+          )}
+        </Stepper>
+      </form>
+    </FormProvider>
   )
 }
 
 function StepNavigation() {
-  const { next, prev, isFirstStep, isLastStep } = useFormContext()
+  const { next, prev, isFirstStep, isLastStep } = useStepper()
 
   return (
     <div>
@@ -81,89 +85,68 @@ function StepNavigation() {
 }
 ```
 
-> **Important:** `<Step>` components must always be mounted in the tree. Conditionally render the `<Controller>` fields inside each `<Step>` based on `currentStep` to show/hide step content.
+> **Important:** Do not conditionally render `<Step>` based on `activeStep`. This would break step counting and cause `isLastStep`, `next()`, and other navigation to behave incorrectly. Always keep steps mounted and conditionally render only the children inside each step.
 
 ## API Reference
 
-### `<Form>`
+### `<Stepper>`
 
-The root component that replaces the standard `<form>` element. Manages step state and validation.
+The root component that manages step state and validation. Does **not** render a `<form>` element — you provide your own `<form>` and wrap with react-hook-form's `<FormProvider>`.
 
 ```tsx
-<Form
-  form={form}
-  onSubmit={handleSubmit}
-  stepValidationMode="forward"
->
-  {children}
-</Form>
+<FormProvider {...form}>
+  <form onSubmit={form.handleSubmit(handleSubmit)}>
+    <Stepper stepValidationMode="forward">
+      {children}
+    </Stepper>
+  </form>
+</FormProvider>
 ```
 
 #### Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `form` | `UseFormReturn<T>` | *required* | The form instance from `useForm()` |
-| `onSubmit` | `(values: T) => void` | *required* | Called with form values on valid submission |
+| `form` | `UseFormReturn<T>` | - | The form instance from `useForm()`. Optional if wrapped in `<FormProvider>` |
 | `stepValidationMode` | `'forward' \| 'all' \| 'none'` | `'forward'` | When to validate step fields (see below) |
 | `children` | `ReactNode \| (context) => ReactNode` | *required* | Form content. Accepts a render function for context access |
-| `ref` | `Ref<HTMLFormElement>` | - | Ref forwarded to the underlying `<form>` element |
-
-All other props are passed through to the underlying `<form>` element (e.g., `className`, `id`).
 
 #### Step Validation Modes
 
 | Mode | Description |
 |------|-------------|
-| `'forward'` | Validates current step fields only when navigating forward (via `next()` or `setCurrentStep` to a later step) |
+| `'forward'` | Validates current step fields only when navigating forward (via `next()` or `jumpTo` to a later step) |
 | `'all'` | Validates current step fields on every navigation (forward and backward) |
 | `'none'` | No automatic validation. Navigate freely between steps |
 
 #### Render Function
 
-When using a render function as children, you receive the full `FormContextValue`:
+When using a render function as children, you receive the full `StepperContextValue`:
 
 ```tsx
-<Form form={form} onSubmit={handleSubmit}>
-  {({ currentStep, isFirstStep, isLastStep, next, prev }) => (
-    // render steps based on currentStep
+<Stepper>
+  {({ activeStep, isFirstStep, isLastStep, next, prev }) => (
+    // render steps based on activeStep
   )}
-</Form>
+</Stepper>
 ```
 
 ---
 
 ### `<Step>`
 
-Groups `<Controller>` fields into a logical step. Fields inside a `<Step>` are automatically registered and validated together. Each `<Step>` defines a step boundary -- conditionally render its children based on `currentStep` to control which step is visible.
+Groups `<Controller>` fields into a logical step. Fields inside a `<Step>` are automatically registered and validated together. Each `<Step>` defines a step boundary — conditionally render its children based on `activeStep` to control which step is visible.
 
-> **Important:** `<Step>` components must always be mounted in the tree. Do not conditionally render the `<Step>` itself -- only its children.
+> **Important:** Do not conditionally render `<Step>` based on `activeStep`. This would break step counting and cause `isLastStep`, `next()`, and other navigation to behave incorrectly. Always keep steps mounted and conditionally render only the children inside each step. Steps **can** be conditionally rendered based on form values for dynamic forms (see [Dynamic Steps](#dynamic-steps)).
 
 ```tsx
 <Step>
-  {currentStep === 0 && (
+  {activeStep === 0 && (
     <>
       <Controller name="firstName" render={({ field }) => <input {...field} />} />
       <Controller name="lastName" render={({ field }) => <input {...field} />} />
     </>
   )}
-</Step>
-```
-
-Steps can be nested for sub-step grouping:
-
-```tsx
-<Step>
-  <Step>
-    {currentStep === 0 && (
-      <Controller name="a" render={({ field }) => <input {...field} />} />
-    )}
-  </Step>
-  <Step>
-    {currentStep === 1 && (
-      <Controller name="b" render={({ field }) => <input {...field} />} />
-    )}
-  </Step>
 </Step>
 ```
 
@@ -188,43 +171,77 @@ A drop-in replacement for react-hook-form's `Controller`. It automatically regis
 
 #### Props
 
-Same as [react-hook-form's Controller](https://react-hook-form.com/docs/usecontroller/controller). The `control` prop is optional -- it's automatically resolved from the `<Form>` context.
+Same as [react-hook-form's Controller](https://react-hook-form.com/docs/usecontroller/controller). The `control` prop is optional — it's automatically resolved from `<FormProvider>`.
 
 ---
 
-### `useFormContext()`
+### `useController()`
 
-Hook to access the stepper state from any component inside `<Form>`.
+A hook alternative to `<Controller>`. Drop-in replacement for react-hook-form's `useController` that automatically registers the field with the nearest `<Step>`.
+
+```tsx
+import { useController } from 'rhf-stepper'
+
+function CustomInput({ name }: { name: string }) {
+  const { field, fieldState } = useController({ name, rules: { required: 'Required' } })
+
+  return (
+    <div>
+      <input {...field} />
+      {fieldState.error && <span>{fieldState.error.message}</span>}
+    </div>
+  )
+}
+```
+
+#### Props
+
+Same as [react-hook-form's useController](https://react-hook-form.com/docs/usecontroller).
+
+---
+
+### `useStepper()`
+
+Hook to access the stepper state from any component inside `<Stepper>`.
 
 ```tsx
 const {
-  form,
-  currentStep,
-  setCurrentStep,
-  currentStepNode,
-  currentStepArr,
-  validatedFields,
+  activeStep,
+  jumpTo,
+  fields,
+  validSteps,
   isFirstStep,
   isLastStep,
   next,
   prev,
-} = useFormContext<MyFormValues>()
+} = useStepper<MyFormValues>()
 ```
 
-#### Return Value (`FormContextValue<T>`)
+#### Return Value (`StepperContextValue<T>`)
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `form` | `UseFormReturn<T>` | The react-hook-form instance |
-| `currentStep` | `number \| number[] \| null` | Current step index. `number[]` for nested steps |
-| `setCurrentStep` | `(step: number \| number[]) => Promise<void>` | Navigate to a specific step. Validates before navigating (based on `stepValidationMode`) |
-| `currentStepNode` | `StepTree \| undefined` | The current step's node in the step tree |
-| `currentStepArr` | `string[] \| null` | Field names registered in the current step |
-| `validatedFields` | `string[]` | Field names that have been validated via step navigation |
+| `activeStep` | `number` | Current step index (0-based) |
+| `jumpTo` | `(step: number, onLeave?) => Promise<boolean>` | Navigate to a specific step. Validates before navigating (based on `stepValidationMode`). Returns `true` if navigation succeeded |
+| `fields` | `string[] \| null` | Field names registered in the current step |
+| `validSteps` | `number[]` | Step indices that have passed validation |
 | `isFirstStep` | `boolean` | `true` if on the first step |
 | `isLastStep` | `boolean` | `true` if on the last step |
-| `next` | `() => void` | Navigate to the next step (validates current step first) |
-| `prev` | `() => void` | Navigate to the previous step |
+| `next` | `(onLeave?) => Promise<boolean>` | Navigate to the next step. Validates current step first. Returns `true` if navigation succeeded |
+| `prev` | `(onLeave?) => Promise<boolean>` | Navigate to the previous step. Returns `true` if navigation succeeded |
+
+#### `onLeave` Callback
+
+`next`, `prev`, and `jumpTo` accept an optional `onLeave` callback that runs **after validation passes but before the step changes**. Use it for side effects like fetching data or auto-filling fields:
+
+```tsx
+await next(async (values) => {
+  // values contains only the current step's fields
+  const res = await fetch(`/api/lookup?zip=${values.zipCode}`)
+  const data = await res.json()
+  form.setValue('city', data.city)
+})
+```
 
 ---
 
@@ -233,8 +250,8 @@ const {
 ### Basic Two-Step Form
 
 ```tsx
-import { useForm } from 'react-hook-form'
-import { Form, Step, Controller, useFormContext } from 'rhf-stepper'
+import { useForm, FormProvider } from 'react-hook-form'
+import { Stepper, Step, Controller, useStepper } from 'rhf-stepper'
 
 type SignupForm = {
   email: string
@@ -247,62 +264,66 @@ function SignupWizard() {
   const form = useForm<SignupForm>()
 
   return (
-    <Form form={form} onSubmit={(data) => console.log(data)}>
-      {({ currentStep }) => (
-        <>
-          <Step>
-            {currentStep === 0 && (
-              <>
-                <Controller
-                  name="email"
-                  rules={{ required: 'Email is required' }}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <input {...field} type="email" placeholder="Email" />
-                      {fieldState.error && <p>{fieldState.error.message}</p>}
-                    </div>
-                  )}
-                />
-                <Controller
-                  name="password"
-                  rules={{ required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' } }}
-                  render={({ field, fieldState }) => (
-                    <div>
-                      <input {...field} type="password" placeholder="Password" />
-                      {fieldState.error && <p>{fieldState.error.message}</p>}
-                    </div>
-                  )}
-                />
-              </>
-            )}
-          </Step>
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit((data) => console.log(data))}>
+        <Stepper>
+          {({ activeStep }) => (
+            <>
+              <Step>
+                {activeStep === 0 && (
+                  <>
+                    <Controller
+                      name="email"
+                      rules={{ required: 'Email is required' }}
+                      render={({ field, fieldState }) => (
+                        <div>
+                          <input {...field} type="email" placeholder="Email" />
+                          {fieldState.error && <p>{fieldState.error.message}</p>}
+                        </div>
+                      )}
+                    />
+                    <Controller
+                      name="password"
+                      rules={{ required: 'Password is required', minLength: { value: 8, message: 'Min 8 characters' } }}
+                      render={({ field, fieldState }) => (
+                        <div>
+                          <input {...field} type="password" placeholder="Password" />
+                          {fieldState.error && <p>{fieldState.error.message}</p>}
+                        </div>
+                      )}
+                    />
+                  </>
+                )}
+              </Step>
 
-          <Step>
-            {currentStep === 1 && (
-              <>
-                <Controller
-                  name="firstName"
-                  rules={{ required: 'First name is required' }}
-                  render={({ field }) => <input {...field} placeholder="First Name" />}
-                />
-                <Controller
-                  name="lastName"
-                  rules={{ required: 'Last name is required' }}
-                  render={({ field }) => <input {...field} placeholder="Last Name" />}
-                />
-              </>
-            )}
-          </Step>
+              <Step>
+                {activeStep === 1 && (
+                  <>
+                    <Controller
+                      name="firstName"
+                      rules={{ required: 'First name is required' }}
+                      render={({ field }) => <input {...field} placeholder="First Name" />}
+                    />
+                    <Controller
+                      name="lastName"
+                      rules={{ required: 'Last name is required' }}
+                      render={({ field }) => <input {...field} placeholder="Last Name" />}
+                    />
+                  </>
+                )}
+              </Step>
 
-          <Navigation />
-        </>
-      )}
-    </Form>
+              <Navigation />
+            </>
+          )}
+        </Stepper>
+      </form>
+    </FormProvider>
   )
 }
 
 function Navigation() {
-  const { next, prev, isFirstStep, isLastStep } = useFormContext()
+  const { next, prev, isFirstStep, isLastStep } = useStepper()
 
   return (
     <div>
@@ -318,13 +339,13 @@ function Navigation() {
 
 ```tsx
 function StepIndicator() {
-  const { currentStep, setCurrentStep } = useFormContext()
+  const { activeStep, jumpTo } = useStepper()
 
   return (
     <nav>
-      <button type="button" onClick={() => setCurrentStep(0)}>Account</button>
-      <button type="button" onClick={() => setCurrentStep(1)}>Profile</button>
-      <button type="button" onClick={() => setCurrentStep(2)}>Review</button>
+      <button type="button" onClick={() => jumpTo(0)}>Account</button>
+      <button type="button" onClick={() => jumpTo(1)}>Profile</button>
+      <button type="button" onClick={() => jumpTo(2)}>Review</button>
     </nav>
   )
 }
@@ -333,18 +354,44 @@ function StepIndicator() {
 ### Skip Validation
 
 ```tsx
-<Form form={form} onSubmit={handleSubmit} stepValidationMode="none">
+<Stepper stepValidationMode="none">
   {/* Users can freely navigate between steps without validation */}
-</Form>
+</Stepper>
+```
+
+### Dynamic Steps
+
+`<Step>` components can be conditionally rendered based on **form values** (not `activeStep`) for dynamic forms:
+
+```tsx
+const needsShipping = useWatch({ control: form.control, name: 'needsShipping' })
+
+<Stepper>
+  {({ activeStep }) => (
+    <>
+      <Step>{activeStep === 0 && <AccountFields />}</Step>
+
+      {needsShipping && (
+        <Step>{activeStep === 1 && <ShippingFields />}</Step>
+      )}
+
+      <Step>
+        {activeStep === (needsShipping ? 2 : 1) && <PaymentFields />}
+      </Step>
+    </>
+  )}
+</Stepper>
 ```
 
 ### Accessing the Form Instance
 
-`useFormContext` returns the full `react-hook-form` instance under the `form` property:
+Since `useStepper` only returns stepper state, use react-hook-form's `useFormContext` to access the form instance:
 
 ```tsx
+import { useFormContext } from 'react-hook-form'
+
 function ResetButton() {
-  const { form } = useFormContext<MyFormValues>()
+  const form = useFormContext<MyFormValues>()
 
   return (
     <button type="button" onClick={() => form.reset()}>
@@ -358,22 +405,20 @@ function ResetButton() {
 
 ```ts
 import type {
-  FormContextValue,
-  FormProps,
+  StepperContextValue,
+  StepperProps,
   ControllerProps,
   ControllerRenderArgs,
-  StepTree,
   StepValidationMode,
 } from 'rhf-stepper'
 ```
 
 | Type | Description |
 |------|-------------|
-| `FormContextValue<T>` | Return type of `useFormContext()` |
-| `FormProps<T>` | Props for the `<Form>` component |
+| `StepperContextValue<T>` | Return type of `useStepper()` |
+| `StepperProps<T>` | Props for the `<Stepper>` component |
 | `ControllerProps<T, N>` | Props for the `<Controller>` component |
 | `ControllerRenderArgs<T, N>` | Arguments passed to the Controller `render` function |
-| `StepTree` | Recursive type representing the step structure (`string \| StepTree[]`) |
 | `StepValidationMode` | `'all' \| 'forward' \| 'none'` |
 
 ## License
