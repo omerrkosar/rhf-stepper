@@ -1,106 +1,102 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import { useInternalStepperContext } from './stepper'
+import { useInternalStepperContext } from "./stepper";
+import { generateGUID } from "./helper";
 
 type StepContextValue = {
-  step?: number
-  registrationKey: number
-  registerField: (elements: string) => void
-  registerStep: (elements: string[], stepRef: React.RefObject<number | undefined>, step?: number) => void
-  rebuildSteps: () => void
-  changeStepAtIndex: (elements: string[], index: number) => void
-}
+  step?: string;
+  registrationKey: number;
+  registerField: (elements: string) => void;
+  rebuildSteps: () => void;
+};
 
-const StepContext = createContext<StepContextValue | null>(null)
+const StepContext = createContext<StepContextValue | null>(null);
 
 function useStep(): StepContextValue | null {
-  return useContext(StepContext)
+  return useContext(StepContext);
 }
 
 function Step({ children }: { children: React.ReactNode }) {
-  const formContext = useInternalStepperContext()
+  const formContext = useInternalStepperContext();
 
   const {
     registerStep: registerStepFromParent,
     step: stepFromParent,
     rebuildSteps: rebuildStepsFromParent,
+    registerStepOrder,
     changeStepAtIndex: changeStepAtIndexFromParent,
     registrationKey: registrationKeyFromParent,
-  } = formContext
+  } = formContext;
 
+  const stepRef = useRef<string | undefined>(undefined);
 
-  const stepRef = useRef<number | undefined>(undefined)
-  const [steps, setSteps] = useState<string[]>([])
+  const [id] = useState(generateGUID());
+  const [steps, setSteps] = useState<string[]>([]);
 
-  const [registrationKey, setRegistrationKey] = useState(0)
-
-  const changeStepAtIndex = useCallback((elements: string[], _index: number): void => {
-    setSteps(elements)
-  }, [])
+  const [registrationKey, setRegistrationKey] = useState(0);
 
   useEffect(() => {
-    const stepList = steps.length ? steps : ['']
-    if (stepRef.current !== undefined) {
-      changeStepAtIndexFromParent(stepList, stepRef.current)
-    } else {
-      registerStepFromParent(stepList, stepRef)
+    const stepList = steps.length ? steps : [""];
+    registerStepFromParent(stepList, id);
+    registerStepOrder(id);
+  }, [steps]);
+
+  useEffect(() => {
+    if (registrationKeyFromParent) {
+      registerStepOrder(id);
     }
-  }, [registrationKeyFromParent, steps])
+  }, [registrationKeyFromParent]);
 
   useEffect(() => {
     if (stepFromParent !== undefined) {
-      rebuildStepsFromParent()
+      rebuildStepsFromParent();
     }
     return () => {
-      rebuildStepsFromParent()
-    }
-  }, [])
+      rebuildStepsFromParent();
+    };
+  }, []);
 
   const registerField = useCallback(
     (element: string): void => {
       setSteps((prevSteps) => {
-        return [...prevSteps, element]
-      })
+        return Array.from(new Set([...prevSteps, element]));
+      });
     },
     [steps],
-  )
-
-  const registerStep = useCallback(
-    (elements: string[], stepRef: React.RefObject<number | undefined>, step?: number): void => {
-      setSteps((prevSteps) => {
-        const stepNumber = step ?? prevSteps.length
-        stepRef.current = stepNumber
-        const newSteps = [...prevSteps]
-        newSteps.splice(stepNumber, 0, ...elements)
-        return newSteps
-      })
-    },
-    [steps],
-  )
+  );
 
   const rebuildSteps = useCallback(() => {
-    setSteps([])
-    setRegistrationKey((prev) => prev + 1)
-  }, [])
+    stepRef.current = undefined;
+    setSteps([]);
+    setRegistrationKey((prev) => prev + 1);
+  }, []);
 
   const contextValue = useMemo<StepContextValue>(
     () => ({
       // eslint-disable-next-line react-hooks/refs
       step: stepRef.current,
       registrationKey,
-      changeStepAtIndex,
       registerField,
-      registerStep,
       rebuildSteps,
     }),
-    [registrationKey, changeStepAtIndex, registerField, registerStep, rebuildSteps],
-  )
+    [registrationKey, registerField, rebuildSteps],
+  );
 
   // eslint-disable-next-line react-hooks/refs
-  return <StepContext.Provider value={contextValue}>{children}</StepContext.Provider>
+  return (
+    <StepContext.Provider value={contextValue}>{children}</StepContext.Provider>
+  );
 }
 
-Step.displayName = 'Step'
+Step.displayName = "Step";
 
-export { Step, useStep }
-export type { StepContextValue }
+export { Step, useStep };
+export type { StepContextValue };

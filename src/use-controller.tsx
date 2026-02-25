@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect } from "react";
 import {
   type Control,
   type FieldPath,
@@ -6,32 +6,34 @@ import {
   type UseControllerProps,
   type UseControllerReturn,
   useController as useRHFController,
-} from 'react-hook-form'
+} from "react-hook-form";
 
-import { useStep } from './step'
+import { useStep } from "./step";
 
 function useController<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
->(props: UseControllerProps<TFieldValues, TName>): UseControllerReturn<TFieldValues, TName> {
-  const stepContext = useStep()
+>(
+  props: UseControllerProps<TFieldValues, TName>,
+): UseControllerReturn<TFieldValues, TName> {
+  const stepContext = useStep();
 
   useEffect(() => {
-    if (stepContext && stepContext?.registrationKey !== 0) {
-      stepContext.registerField(props.name)
+    if (stepContext) {
+      stepContext.registerField(props.name);
     }
-  }, [stepContext?.registrationKey])
+  }, [stepContext?.registrationKey]);
 
   useEffect(() => {
     if (stepContext?.step !== undefined) {
-      stepContext?.rebuildSteps()
+      stepContext?.rebuildSteps();
     }
     return () => {
-      stepContext?.rebuildSteps()
-    }
-  }, [])
+      stepContext?.rebuildSteps();
+    };
+  }, []);
 
-  return useRHFController({ ...props })
+  return useRHFController({ ...props });
 }
 
-export { useController }
+export { useController };
