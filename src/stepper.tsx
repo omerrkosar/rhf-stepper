@@ -40,7 +40,6 @@ type InternalStepperContextValue = {
   rebuildSteps: () => void;
   registerStepOrder: (id: string) => void;
   registerStep: (elements: string[], id: string) => void;
-  changeStepAtIndex: (elements: string[], index: string) => void;
 };
 
 const StepperContext = createContext<StepperContextValue | null>(null);
@@ -49,6 +48,9 @@ const InternalStepperContext =
 
 function useInternalStepperContext(): InternalStepperContextValue {
   const context = useContext(InternalStepperContext);
+  if (!context) {
+    throw new Error('<Step> must be used within a <Stepper>')
+  }
   return context as unknown as InternalStepperContextValue;
 }
 
@@ -216,33 +218,11 @@ function Stepper<TFieldValues extends FieldValues = FieldValues>({
     [activeStep],
   );
 
-  const unRegisterStep = useCallback(
-    (id: string): void => {
-      setSteps((prevSteps) => {
-        const newSteps = { ...prevSteps };
-        delete newSteps[id];
-
-        return newSteps;
-      });
-    },
-    [activeStep],
-  );
-
   const rebuildSteps = useCallback(() => {
     setStepOrder([]);
     setRegistrationKey((prev) => prev + 1);
   }, []);
 
-  const changeStepAtIndex = useCallback(
-    (elements: string[], index: string): void => {
-      setSteps((prevSteps) => {
-        const newSteps = { ...prevSteps };
-        prevSteps[index] = elements;
-        return newSteps;
-      });
-    },
-    [],
-  );
 
   const publicContextValue = useMemo<StepperContextValue>(
     () => ({
@@ -275,14 +255,12 @@ function Stepper<TFieldValues extends FieldValues = FieldValues>({
       rebuildSteps,
       registerStepOrder,
       registerStep,
-      changeStepAtIndex,
     }),
     [
       registrationKey,
       rebuildSteps,
       registerStepOrder,
       registerStep,
-      changeStepAtIndex,
     ],
   );
 

@@ -1,7 +1,7 @@
 {
   "name": "rhf-stepper",
-  "version": "1.0.1",
-  "description": "A multi-step form helper for react-hook-form",
+  "version": "1.0.2",
+  "description": "A headless multi-step form helper for react-hook-form",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

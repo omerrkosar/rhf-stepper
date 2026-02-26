@@ -32,7 +32,6 @@ function Step({ children }: { children: React.ReactNode }) {
     step: stepFromParent,
     rebuildSteps: rebuildStepsFromParent,
     registerStepOrder,
-    changeStepAtIndex: changeStepAtIndexFromParent,
     registrationKey: registrationKeyFromParent,
   } = formContext;
 

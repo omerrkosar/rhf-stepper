@@ -10,7 +10,6 @@ import {
 } from "react-hook-form";
 
 import { useStep } from "./step";
-import { useInternalStepperContext } from "./stepper";
 
 type ControllerRenderArgs<
   TFieldValues extends FieldValues = FieldValues,
